@@ -33,6 +33,7 @@ namespace Scopos.BabelFish.DataActors.OrionMatch {
         /// <param name="projection"></param>
         public override void ProjectAthleteScores( IEventScoreProjection projection ) {
 
+            //Stage Appelation HAS MAX SHOT VALUE, FEKKIN USE IT!!
             if (projection.Participant is Team) {
                 //This is more of an Assert statement. We shouldn't get here if ProjectorOfScores.ProjectEventScores is written correctly.
                 throw new ArgumentException( "ProjectAthleteScores can not project scores if the .Participant is a Team." );
@@ -182,6 +183,7 @@ namespace Scopos.BabelFish.DataActors.OrionMatch {
 
 
             var defaulting = GetAverageShot();
+            //BB test is being counted as a singular I think... so...
             var numOfShots = eventComposite.GetAllSingulars().Count;
 
             Score score = new Score();

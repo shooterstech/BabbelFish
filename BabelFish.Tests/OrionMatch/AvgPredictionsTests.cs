@@ -46,16 +46,32 @@ namespace Scopos.BabelFish.Tests.OrionMatch
                 StageLabel = "K",
                 Type = SingularType.SHOT
             };
+            Singular test = new Singular
+            {
+                Values = "1",
+                EventName = "T{}",
+                ScoreFormat = "Tests",
+                StageLabel = "T",
+                Type = SingularType.TEST
+            };
             courseOfFire.Singulars.Add(stand);
             courseOfFire.Singulars.Add(pron);
             courseOfFire.Singulars.Add(knee);
+            courseOfFire.Singulars.Add(test);
 
             Event @event = new Event();
             @event.EventName = "Qualification";
             @event.EventType = EventtType.EVENT;
-            @event.Children = new List<string>() { "Prone","Standing","Kneeling" };
+            @event.Children = new List<string>() { "Positions", "Test" };
             @event.Calculation = "SUM";
             @event.ScoreFormat = "Events";
+
+            Event @positions = new Event();
+            @positions.EventName = "Positions";
+            @positions.EventType = EventtType.NONE;
+            @positions.Children = new List<string>() { "Prone","Standing","Kneeling" };
+            @positions.Calculation = "SUM";
+            @positions.ScoreFormat = "Events";
 
             Event @stage1 = new Event();
             @stage1.EventName = "Prone";
@@ -93,10 +109,24 @@ namespace Scopos.BabelFish.Tests.OrionMatch
             @stage3.Calculation = "SUM";
             @stage3.ScoreFormat = "Events";
 
+            Event @testStage = new Event();
+            @testStage.EventName = "Test";
+            @testStage.EventType = EventtType.STAGE;
+            var @testStageDict = new Dictionary<string, string>
+            {
+                { "EventName", "T{}" },
+                { "Values", "1" }
+            };
+            @testStage.Children = @testStageDict;
+            @testStage.Calculation = "SUM";
+            @testStage.ScoreFormat = "Tests";
+
             courseOfFire.Events.Add(@event);
+            courseOfFire.Events.Add(@positions);
             courseOfFire.Events.Add(@stage1);
             courseOfFire.Events.Add(@stage2);
             courseOfFire.Events.Add(@stage3);
+            courseOfFire.Events.Add(@testStage);
         }
 
         [TestMethod]
@@ -147,6 +177,16 @@ namespace Scopos.BabelFish.Tests.OrionMatch
             };
             resultEvent.EventScores.Add("Kneeling", knee);
 
+            EventScore test = new EventScore
+            {
+                EventName = "Test",
+                Score = new DataModel.Athena.Score { I = 95, D = 0, X = 0 },
+                ScoreFormatted = "",
+                NumShotsFired = 1,
+                EventType = "STAGE"
+            };
+            resultEvent.EventScores.Add("Test", test);
+
 
             resultEvent.ProjectScores(new ProjectScoresByAverageShotFired(courseOfFire));
             Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(resultEvent));
@@ -156,9 +196,9 @@ namespace Scopos.BabelFish.Tests.OrionMatch
             Assert.AreEqual(202.8f, resultEvent.EventScores["Standing"].Projected.D);
             Assert.AreEqual(8,      resultEvent.EventScores["Standing"].Projected.X);
 
-            Assert.AreEqual(198,    resultEvent.EventScores["Prone"].Projected.I);
-            Assert.AreEqual(202.1f, resultEvent.EventScores["Prone"].Projected.D);
-            Assert.AreEqual(10,      resultEvent.EventScores["Prone"].Projected.X);
+            Assert.AreEqual(0,      resultEvent.EventScores["Prone"].Projected.I);
+            Assert.AreEqual(0f,     resultEvent.EventScores["Prone"].Projected.D);
+            Assert.AreEqual(0,      resultEvent.EventScores["Prone"].Projected.X);
 
             Assert.AreEqual(198,    resultEvent.EventScores["Kneeling"].Projected.I);
             Assert.AreEqual(201.3f, resultEvent.EventScores["Kneeling"].Projected.D);
