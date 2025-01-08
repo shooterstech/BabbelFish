@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Scopos.BabelFish.DataActors.Specification.Definitions;
 using Scopos.BabelFish.DataModel.AttributeValue;
 
 namespace Scopos.BabelFish.DataModel.Definitions {
@@ -31,8 +32,8 @@ namespace Scopos.BabelFish.DataModel.Definitions {
             base.OnDeserializedMethod(context);
 
             //Designation is not required, but if the user doesn't include it, set it to all values except HIDDEN
-            if (Designation == null || Designation.Count() == 0)
-                Designation = new List<AttributeDesignation>() { AttributeDesignation.ATHLETE, AttributeDesignation.CLUB, AttributeDesignation.MATCH_OFFICIAL, AttributeDesignation.TEAM, AttributeDesignation.TEAM_OFFICIAL, AttributeDesignation.USER };
+            if (designation == null || designation.Count() == 0)
+                designation = new List<AttributeDesignation>() { AttributeDesignation.ATHLETE, AttributeDesignation.CLUB, AttributeDesignation.MATCH_OFFICIAL, AttributeDesignation.TEAM, AttributeDesignation.TEAM_OFFICIAL, AttributeDesignation.USER };
         }
 
         /// <inheritdoc />
@@ -43,7 +44,6 @@ namespace Scopos.BabelFish.DataModel.Definitions {
             copy.DisplayName = this.DisplayName;
             copy.MaxVisibility = this.MaxVisibility;
             copy.MultipleValues = this.MultipleValues;
-            copy.RequiredAttributes.AddRange( this.RequiredAttributes );
             foreach( var f in this.Fields )
             copy.Fields.Add( f.Copy() );
 
@@ -54,30 +54,85 @@ namespace Scopos.BabelFish.DataModel.Definitions {
             return copy;
         }
 
+        private string displayName = string.Empty;
+
+        /// <summary>
+        /// DisplayName is the name displayed to the user for this ATTRIBUTE.
+        /// </summary>
         [JsonProperty(Order = 10)]
-        [DefaultValue("")]
-        public string DisplayName { get; set; } = string.Empty;
+        public string DisplayName {
+            get {
+                if (string.IsNullOrEmpty( displayName )) {
+                    try {
+                        var hn = this.GetHierarchicalName();
+                        return hn.ProperName;
+                    } catch (Exception ex) {
+                        ; //Do nothing, just let it fall through
+                    }
+                }
 
-        [JsonProperty(Order = 11)]
-        public List<AttributeDesignation> Designation { get; set; } = new List<AttributeDesignation>() { AttributeDesignation.ATHLETE, AttributeDesignation.CLUB, AttributeDesignation.MATCH_OFFICIAL, AttributeDesignation.TEAM, AttributeDesignation.TEAM_OFFICIAL, AttributeDesignation.USER };
+                return displayName;
+            }
+            set {
+                displayName = value;
+            }
+        }
 
-        [JsonProperty(Order = 12)]
-        [JsonConverter(typeof(StringEnumConverter))]
-        public VisibilityOption MaxVisibility { get; set; }
+		private List<AttributeDesignation> designation = new List<AttributeDesignation>();
 
-        [JsonProperty( Order = 13 )]
-        [DefaultValue( false )]
-        public VisibilityOption DefaultVisibility { get; set; } = VisibilityOption.PUBLIC;
+		/// <summary>
+		/// The type of participant, teams, or clubs that this Attribute may be applied to.
+		/// </summary>
+		[JsonProperty(Order = 11)]
+        public List<AttributeDesignation> Designation {
+            get {
+                if (designation == null)
+                    designation = new List<AttributeDesignation>();
 
-        [JsonProperty(Order = 13)]
+                return designation;
+            }
+            set {
+                if (value.Count == 0) {
+                    //In essence the reset condition. 
+                    designation.Clear();
+                } else {
+                    //Avoid adding duplicates
+                    designation.Clear();
+                    foreach( var d in value ) {
+                        if (!designation.Contains( d ))
+                            designation.Add( d ); 
+                    }
+                }
+            }
+        }
+
+		/// <summary>
+		/// The maximum visibility the user can set for the ATTRIBUTE VALUE.
+		/// </summary>
+		[JsonProperty( Order = 12 )]
+        [JsonConverter( typeof( StringEnumConverter ) )]
+        [DefaultValue( VisibilityOption.PUBLIC )]
+        public VisibilityOption MaxVisibility { get; set; } = VisibilityOption.PUBLIC;
+
+		/// <summary>
+		/// The default visibility for a new ATTRIBUTE VALUE. 
+        /// Must be a Privacy value equal to or greater than the MaxVisibility.
+		/// </summary>
+		[JsonProperty( Order = 13 )]
+		[DefaultValue( VisibilityOption.PUBLIC )]
+		public VisibilityOption DefaultVisibility { get; set; } = VisibilityOption.PUBLIC;
+
+		/// <summary>
+		/// Indicates if multiple field values may be assigned in the resulting ATTRIBUTE VALUEs.
+		/// </summary>
+		[JsonProperty(Order = 13)]
         [DefaultValue(false)]
         public bool MultipleValues { get; set; } = false;
 
-        [JsonProperty(Order = 14)]
-        [DefaultValue(null)]
-        public List<string> RequiredAttributes { get; set; } = new List<string>();
-
-        [JsonProperty(Order = 15)]
+		/// <summary>
+		/// A list of AttributeFields that describe the make-up of this ATTRIBUTE.
+		/// </summary>
+		[JsonProperty(Order = 15)]
         [DefaultValue(null)]
         public List<AttributeField> Fields { get; set; } = new List<AttributeField>();
 
@@ -92,7 +147,17 @@ namespace Scopos.BabelFish.DataModel.Definitions {
                     && Fields.Count == 1
                     && !Fields[0].MultipleValues;
             }
-        }
+		}
 
-    }
+		/// <inheritdoc />
+		public override async Task<bool> GetMeetsSpecificationAsync() {
+			var validation = new IsAttributeValid();
+
+			var meetsSpecification = await validation.IsSatisfiedByAsync( this );
+			SpecificationMessages = validation.Messages;
+
+			return meetsSpecification;
+		}
+
+	}
 }

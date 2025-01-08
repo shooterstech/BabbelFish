@@ -15,6 +15,7 @@ using Scopos.BabelFish.APIClients;
 using Scopos.BabelFish.Requests.DefinitionAPI;
 using Scopos.BabelFish.Responses.DefinitionAPI;
 using System.Diagnostics;
+using System.IO;
 
 namespace Scopos.BabelFish.Tests.Definition {
 
@@ -172,5 +173,31 @@ namespace Scopos.BabelFish.Tests.Definition {
             Assert.IsFalse( secondResult.InMemoryCachedResponse );
 
         }
+
+        [TestMethod]
+        public async Task SaveToFileTest() {
+
+
+			var client = new DefinitionAPIClient();
+			var setName = SetName.Parse( "v1.0:ntparc:Sporter Air Rifle Kneeling" );
+
+			var response = await client.GetStageStyleDefinitionAsync( setName );
+            var stageStyle = response.Definition;
+
+            DirectoryInfo temp = new DirectoryInfo( @"c:\temp" );
+            stageStyle.SaveToFile( temp );
+		}
+
+        [TestMethod] 
+        public async Task ReadFromFileTest() {
+
+            string path = @"G:\My Drive\Definitions\COURSE OF FIRE\v1.0 usas Smallbore Rifle 60 Prone.json";
+
+            string json = File.ReadAllText( path );
+
+            var definition = JsonConvert.DeserializeObject<Scopos.BabelFish.DataModel.Definitions.Definition> ( json );
+
+            Assert.AreEqual( DefinitionType.COURSEOFFIRE, definition.Type );
+		}
     }
 }

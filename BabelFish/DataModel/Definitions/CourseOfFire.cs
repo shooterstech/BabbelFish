@@ -9,19 +9,23 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Scopos.BabelFish.APIClients;
+using Scopos.BabelFish.DataActors.Specification.Definitions;
 using Scopos.BabelFish.Helpers;
 
 namespace Scopos.BabelFish.DataModel.Definitions {
     /// <summary>
-    /// A COURSE OF FIRE defines the structure of events that make up a competition. This structure includes:
-    /// * Defining each event, both composite events and singular events. A composite event is made up of other events. A singular event is made up only of itself, and is almost always just a shot.
-    /// * EVENT STYLE and STAGE STYLE assignment to events. 
-    /// * Range officer command script.
-    /// * EST Target configuration.
-    /// * Mapping of shots to singular events.
-    /// A COURSE OF FIRE should only describe an event that can be completed with one outing to the range. In other words, an athlete should be able to complete the course of fire with one trip to the range. A multi-day event is the combination of two or more COURSE OF FIRE, that is defined outside of this type.
+    /// A COURSE OF FIRE defines the structure of events that make up a competition. 
+    /// <para>This structure includes: </para>
+    /// <list type="bullet">
+    /// <item>Defining each event, both composite events and singular events. A composite event is made up of other events. A singular event is made up only of itself, and is almost always just a shot.</item>
+    /// <item>EVENT STYLE and STAGE STYLE assignment to events. </item>
+    /// <item>Range officer command script.</item>
+    /// <item>EST Target configuration.</item>
+    /// <item>Mapping of shots to singular events.</item>
+    /// </list>
+    /// <para>A COURSE OF FIRE should only describe an event that can be completed with one outing to the range. In other words, an athlete should be able to complete the course of fire with one trip to the range. A multi-day event is the combination of two or more COURSE OF FIRE, that is defined outside of this type.</para>
     /// </summary>
-    public class CourseOfFire : Definition, IGetTargetCollectionDefinition, ICopy<CourseOfFire> {
+    public class CourseOfFire : Definition, IGetTargetCollectionDefinition, ICopy<CourseOfFire>, IGetScoreFormatCollectionDefinition, IGetEventAndStageStyleMapping {
 
         public CourseOfFire() : base() {
             Type = DefinitionType.COURSEOFFIRE;
@@ -162,6 +166,20 @@ namespace Scopos.BabelFish.DataModel.Definitions {
         [JsonProperty(Order = 16)]
         public string ScoreConfigDefault { get; set; } = string.Empty;
 
+        /// <inheritdoc />
+        public async Task<ScoreFormatCollection> GetScoreFormatCollectionDefinitionAsync() {
+
+            SetName scoreFormatCollectionSetName = Scopos.BabelFish.DataModel.Definitions.SetName.Parse( ScoreFormatCollectionDef );
+            return await DefinitionCache.GetScoreFormatCollectionDefinitionAsync( scoreFormatCollectionSetName );
+        }
+
+        /// <inheritdoc />
+        public async Task<EventAndStageStyleMapping> GetEventAndStageStyleMappingDefinitionAsync() {
+
+            SetName eventAndStageStyleMappingSetName = Scopos.BabelFish.DataModel.Definitions.SetName.Parse( DefaultEventAndStageStyleMappingDef );
+            return await DefinitionCache.GetEventAndStageStyleMappingDefinitionAsync( eventAndStageStyleMappingSetName );
+        }
+
         /// <summary>
         /// The default Event and Stage Style Mapping file to use. 
         /// </summary>
@@ -200,5 +218,15 @@ namespace Scopos.BabelFish.DataModel.Definitions {
         [JsonProperty(Order = 23)]
         public List<AbbreviatedFormat> AbbreviatedFormats { get; set; } = new List<AbbreviatedFormat>();
 
-    }
+		/// <inheritdoc />
+		public override async Task<bool> GetMeetsSpecificationAsync() {
+			var validation = new IsCourseOfFireValid();
+
+			var meetsSpecification = await validation.IsSatisfiedByAsync( this );
+			SpecificationMessages = validation.Messages;
+
+			return meetsSpecification;
+		}
+
+	}
 }

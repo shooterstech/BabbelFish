@@ -143,9 +143,16 @@ namespace Scopos.BabelFish.DataModel.Definitions {
         [Description( "SHOTGUN" )][EnumMember( Value = "SHOTGUN" )] SHOTGUN,
 
         /// <summary>
-        /// Not Applicable
+        /// Silhouette
         /// </summary>
-        [Description( "NOT APPLICABLE" )][EnumMember( Value = "NOT APPLICABLE" )] NA,
+        [Description( "SILHOUETTE" )]
+        [EnumMember( Value = "SILHOUETTE" )]
+		SILHOUETTE,
+
+		/// <summary>
+		/// Not Applicable
+		/// </summary>
+		[Description( "NOT APPLICABLE" )][EnumMember( Value = "NOT APPLICABLE" )] NA,
 
 		/// <summary>
 		/// Benchrest
@@ -177,8 +184,7 @@ namespace Scopos.BabelFish.DataModel.Definitions {
     public enum FieldType {
         OPEN,
         CLOSED,
-        SUGGEST,
-        DERIVED
+        SUGGEST
     }
 
 
@@ -259,6 +265,20 @@ namespace Scopos.BabelFish.DataModel.Definitions {
         [EnumMember( Value = "Record" )]
         RECORD
 
+    }
+
+    /// <summary>
+    /// The Score Components from a Score object.
+    /// </summary>
+    [JsonConverter( typeof( StringEnumConverter ) )]
+    public enum ScoreComponent {
+        X,
+        I,
+        D,
+        S,
+        J,
+        K,
+        L
     }
 
     /// <summary>

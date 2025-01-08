@@ -284,7 +284,7 @@ namespace Scopos.BabelFish.Tests.Definition {
                 Assert.AreEqual(esd.SimpleCOFs[i].CourseOfFireDef, Copyesd.SimpleCOFs[i].CourseOfFireDef);
                 for(int j = 0; j < esd.SimpleCOFs[i].Components.Count(); j++)
                 {
-                    Assert.AreEqual(esd.SimpleCOFs[i].Components[j].StageStyle, Copyesd.SimpleCOFs[i].Components[j].StageStyle);
+                    Assert.AreEqual(esd.SimpleCOFs[i].Components[j].StageStyleDef, Copyesd.SimpleCOFs[i].Components[j].StageStyleDef );
                 }
             }
             //CopySimpleCOF should also be tested for functionality
@@ -349,21 +349,11 @@ namespace Scopos.BabelFish.Tests.Definition {
                 Assert.AreEqual(rr.RankingRules[i].AppliesTo, copy.RankingRules[i].AppliesTo);
                 for(int j = 0; j < rr.RankingRules[i].Rules.Count(); j++)
                 {
-                    Assert.AreEqual(rr.RankingRules[i].Rules[j].EventName, copy.RankingRules[i].Rules[j].EventName);
-                    Assert.AreEqual(rr.RankingRules[i].Rules[j].Values, copy.RankingRules[i].Rules[j].Values);
-                    Assert.AreEqual(rr.RankingRules[i].Rules[j].Method, copy.RankingRules[i].Rules[j].Method);
-                    Assert.AreEqual(rr.RankingRules[i].Rules[j].SortOrder, copy.RankingRules[i].Rules[j].SortOrder);
-                    Assert.AreEqual(rr.RankingRules[i].Rules[j].ResultStatus, copy.RankingRules[i].Rules[j].ResultStatus);
-                    Assert.AreEqual(rr.RankingRules[i].Rules[j].Source, copy.RankingRules[i].Rules[j].Source);
+                    Assert.AreEqual(rr.RankingRules[i].Rules[j], copy.RankingRules[i].Rules[j] );
                 }
                 for(int j = 0; j < rr.RankingRules[i].ListOnly.Count(); j++)
                 {
-                    Assert.AreEqual(rr.RankingRules[i].ListOnly[j].EventName, copy.RankingRules[i].ListOnly[j].EventName);
-                    Assert.AreEqual(rr.RankingRules[i].ListOnly[j].Values, copy.RankingRules[i].ListOnly[j].Values);
-                    Assert.AreEqual(rr.RankingRules[i].ListOnly[j].Method, copy.RankingRules[i].ListOnly[j].Method);
-                    Assert.AreEqual(rr.RankingRules[i].ListOnly[j].SortOrder, copy.RankingRules[i].ListOnly[j].SortOrder);
-                    Assert.AreEqual(rr.RankingRules[i].ListOnly[j].ResultStatus, copy.RankingRules[i].ListOnly[j].ResultStatus);
-                    Assert.AreEqual(rr.RankingRules[i].ListOnly[j].Source, copy.RankingRules[i].ListOnly[j].Source);
+                    Assert.AreEqual(rr.RankingRules[i].ListOnly[j], copy.RankingRules[i].ListOnly[j] );
                 }
             }
         }
@@ -630,17 +620,17 @@ namespace Scopos.BabelFish.Tests.Definition {
         {
             // part of CopySimpleCOF
             SimpleCOFComponent scc = new SimpleCOFComponent();
-            scc.StageStyle = "Something here";
+            scc.StageStyleDef = "Something here";
             scc.Shots = 15;
-            scc.ScoreFormat = "{d}";
+            scc.ScoreConfigName = "Integer";
 
             //copy scofc
             SimpleCOFComponent Copysc = new SimpleCOFComponent();
             Copysc = scc.Copy();
 
-            Assert.AreEqual(scc.StageStyle, Copysc.StageStyle);
+            Assert.AreEqual(scc.StageStyleDef, Copysc.StageStyleDef );
             Assert.AreEqual(scc.Shots, Copysc.Shots);
-            Assert.AreEqual(scc.ScoreFormat, Copysc.ScoreFormat);
+            Assert.AreEqual(scc.ScoreConfigName, Copysc.ScoreConfigName );
         }
 
         [TestMethod]
@@ -787,12 +777,7 @@ namespace Scopos.BabelFish.Tests.Definition {
             foreach (var rr in rankingRule.RankingRules) {
                 foreach (var tbr in rr.Rules) {
                     var copy = tbr.Copy();
-                    Assert.AreEqual( tbr.EventName, copy.EventName );
-                    Assert.AreEqual( tbr.Values, copy.Values );
-                    Assert.AreEqual( tbr.Source, copy.Source );
-                    Assert.AreEqual( tbr.ResultStatus, copy.ResultStatus );
-                    Assert.AreEqual( tbr.Method, copy.Method );
-                    Assert.AreEqual( tbr.SortOrder, copy.SortOrder );
+                    Assert.AreEqual( tbr, copy );
                 }
             }
         }

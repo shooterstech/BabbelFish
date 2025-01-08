@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-//using System.ComponentModel.DataAnnotations; //COMMENT OUT FOR .NET Standard 2.0
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Scopos.BabelFish.DataModel;
+using Scopos.BabelFish.Converters;
+using Scopos.BabelFish.DataActors.Specification;
+using Scopos.BabelFish.Helpers;
 
 namespace Scopos.BabelFish.DataModel.Definitions {
-    [Serializable]
-    public abstract class Definition : BaseClass, IReconfigurableRulebookObject {
+
+	[JsonConverter( typeof( DefinitionConverter ) )]
+	[Serializable]
+    public abstract class Definition : SparseDefinition, IReconfigurableRulebookObject {
 
         private string commonName = string.Empty;
 
@@ -45,37 +48,30 @@ namespace Scopos.BabelFish.DataModel.Definitions {
 		}
 
         internal void OnDeserializedMethod(StreamingContext context) {
-            //Note, each subclass of Definition will have to call base.OnSerializedMethod
+			//Note, each subclass of Definition will have to call base.OnSerializedMethod
 
-            //Assures that Tags won't be null and as a default will be an empty list.
-        }
+			//Assures that Tags won't be null and as a default will be an empty list.
+		}
 
-        /// <summary>
-        /// The Definition Type
-        /// </summary>
-        [JsonProperty( Order = 1 )]
-        [JsonConverter( typeof( StringEnumConverter ) )]
-        public DefinitionType Type { get; set; }
-
-        /// <summary>
-        /// The precise version number of this Definition. Note, the version number listed in the SetName is often 
-        /// a reference to either the latest Major release. Version always provides both the Major and Minor release numbers and is not a reference.
-        /// </summary>
-        /// <example>1.5</example>
-        [JsonProperty( Order = 2 )]
-        public string Version { get; set; } = string.Empty;
-
-        /// <summary>
-        /// HierarchicalName is namespace:properName
-        /// </summary>
-        [JsonProperty( Order = 3 )]
+		/// <summary>
+		/// HierarchicalName is namespace:properName
+		/// </summary>
+		[JsonProperty( Order = 3 )]
         public string HierarchicalName { get; set; } = string.Empty;
 
         /// <summary>
-        /// A SetName is a unique identifier for a Defintion file within a definition type. It has three parts, the version number, namespace, and propername.
+        /// Returns the value of .HierarchicalName as an HierarchicalName object.
         /// </summary>
-        [JsonProperty( Order = 4 )]
-		public string SetName { get; set; } = string.Empty;
+        /// <returns></returns>
+        /// <exception cref="InvalidDataException">Thrown if the value of .HierarchicalName can not be parsed.</exception>
+        public HierarchicalName GetHierarchicalName() {
+            HierarchicalName hierarchicalName;
+            if (!Scopos.BabelFish.DataModel.Definitions.HierarchicalName.TryParse( this.HierarchicalName, out hierarchicalName )) {
+                return hierarchicalName;
+            }
+
+            throw new InvalidDataException( $"Unable to parse '{HierarchicalName}' into a HierarchicalName." );
+        }
 
         /// <summary>
         /// A human readable short name for this Definition. If no specific value
@@ -138,34 +134,17 @@ namespace Scopos.BabelFish.DataModel.Definitions {
         [JsonProperty( Order = 10 )]
         public List<string> Tags { get; set; } = new List<string>();
 
-        /// <inheritdoc/>
-        [JsonProperty( Order = 99, DefaultValueHandling = DefaultValueHandling.Ignore )]
+		/// <summary>
+		/// The Version string of the JSON document.
+		/// </summary>
+		[JsonProperty( Order = 10, DefaultValueHandling = DefaultValueHandling.Include )]
+		[DefaultValue( "2020-03-31" )]
+		public string JSONVersion { get; set; } = "2020-03-31";
+
+		/// <inheritdoc/>
+		[JsonProperty( Order = 99, DefaultValueHandling = DefaultValueHandling.Ignore )]
         [DefaultValue( "" )]
         public string Comment { get; set; } = string.Empty;
-
-        /// <summary>
-        /// The Version string of the JSON document
-        /// </summary>
-        [JsonProperty( Order = 2 )]
-        [DefaultValue( "2020-03-31" )]
-        public string JSONVersion { get; set; } = string.Empty;
-
-        /// <summary>
-        /// If true, this Definition is no longer in use and should not be referenced.
-        /// </summary>
-        [JsonProperty( Order = 101 )]
-		[DefaultValue( false )]
-		public bool Discontinued { get; set; }
-
-        /// <summary>
-        /// Returns the Version of the Definition as an object DefinitionVersion.
-        /// the string varation is returned with the property .Version
-        /// </summary>
-        /// <returns></returns>
-        /// <exception cref="ArgumentException">Thrown if the Version can not be parsed to format x.y</exception>
-        public DefinitionVersion GetDefinitionVersion() {
-            return new DefinitionVersion( Version );
-        }
 
         /// <summary>
         /// Returns a SetName object based on the Definitions Version and HierrchcialName
@@ -182,9 +161,36 @@ namespace Scopos.BabelFish.DataModel.Definitions {
             return sn;
         }
 
-        public override string ToString() {
-            return $"{Type}: {SetName}";
+        public abstract Task<bool> GetMeetsSpecificationAsync();
+
+        [JsonIgnore]
+        public List<string> SpecificationMessages { get; protected set; }
+
+		/// <summary>
+		/// Returns the file name for this Definition. It should be stored in a directory named after the definition type.
+		/// </summary>
+		/// <returns></returns>
+		public string GetFileName(bool useDevelopmentVersioning = false) {
+            if (! useDevelopmentVersioning) 
+                return $"{SetName.ToString().Replace( ':', ' ' )}.json";
+
+            return $"d0.0 {HierarchicalName.ToString().Replace( ':', ' ' )}.json";
         }
 
+        public string SaveToFile( DirectoryInfo definitionDirectory ) {
+
+            string filePath = $"{definitionDirectory.FullName}\\{Type.Description()}\\{GetFileName(true)}";
+
+            DirectoryInfo typeDirectory = new DirectoryInfo( $"{definitionDirectory.FullName}\\{Type.Description()}" );
+
+            if (!typeDirectory.Exists)
+                typeDirectory.Create();
+
+			string json = JsonConvert.SerializeObject( this, Formatting.Indented );
+
+            File.WriteAllText( filePath, json );
+
+            return filePath ;
+        }
     }
 }
